@@ -155,7 +155,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except OSError as a:
             pass
         return ConversationHandler.END
-			return ConversationHandler.END
+return ConversationHandler.END
 
 async def show_all_items(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
