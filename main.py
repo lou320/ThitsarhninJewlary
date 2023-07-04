@@ -337,6 +337,7 @@ def main() -> None:
     application.add_handler(conv_handler)
     application.add_handler(name_search_conv_handler)
     application.add_handler(item_remove_conv_handler)
+    application.add_handler(id_search_conv_handler)
     application.add_handler(sold_item_conv_handler)
     application.run_polling()
 
