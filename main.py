@@ -17,7 +17,7 @@ bot.
 import logging
 import os
 from BACKEND import get_file_name, get_dir
-from database import create_tables, add_item_to_database, fetch_items_from_database,search_by_name, remove_item_from_database,get_sold_items_from_database,mark_item_as_sold,get_items_sold_today_from_database
+from database import create_tables, add_item_to_database, fetch_items_from_database,search_by_name, remove_item_from_database,get_sold_items_from_database,mark_item_as_sold,get_items_sold_today_from_database, search_by_id
 from telegram import __version__ as TG_VER
 
 try:
@@ -47,7 +47,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ADDING_ITEM_IMAGE,ADDING_ITEM_NAME, ADDING_BOUGHT_VALUE, ADDING_ITEM_GRAM, ADDING_BOUGHT_AYOTTWAT, ADDING_SELL_AYOTTWAT, SEARCH_BY_NAME,REMOVE_BY_ID, SOLD_ITEM  = range(9)
+ADDING_ITEM_IMAGE,ADDING_ITEM_NAME, ADDING_BOUGHT_VALUE, ADDING_ITEM_GRAM, ADDING_BOUGHT_AYOTTWAT, ADDING_SELL_AYOTTWAT, SEARCH_BY_NAME,REMOVE_BY_ID, SOLD_ITEM, SEARCH_BY_ID  = range(10)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("Welcome, I'm a bot to help Thitsar Hnin Jewelry Shop.")
@@ -238,6 +238,28 @@ async def name_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+async def search_with_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "ရှာဖွေမည့်ပစ္စည်းIDထည့်ပါ"
+    )
+    return SEARCH_BY_ID
+
+async def id_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    search_query = update.message.text
+    items = search_by_id(search_query)
+    if not type(items) == str:
+        for item in items:
+            if item['is_sold']:
+                sold = ('ရောင်းပြီး\nSoldDate:'+ str(item['sold_date']))
+            else:
+                sold = 'မရောင်းရသေး'
+            image_path = item['image_url']
+            text = f"ID#{item['id']} {item['item_name']}\n\n{sold}\n\nPostDate:{item['posted_date']}\n\nပစ္စည်းအလေးချိန် - {item['item_gram']}\n\nဝယ်ရင်းစျေး- {item['bought_value']}\n\nဝယ်ရင်းပစ္စည်းအရော့တွက် - {item['bought_ayottwat']} \n\nရောင်းမည့်အရော့တွက် - {item['sell_ayottwat']} "
+            await update.message.reply_photo(photo=open(image_path, 'rb'), caption=text)
+    else:
+        await update.message.reply_text(items)
+    return ConversationHandler.END
+
 async def remove_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "ဖျက်မည့်ပစ္စည်း ID ထည့်ပါ"
@@ -287,6 +309,13 @@ def main() -> None:
         entry_points=[CommandHandler('name_search', search_with_name)],
         states={
             SEARCH_BY_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, name_search)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+    id_search_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('id_search', search_with_id)],
+        states={
+            SEARCH_BY_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, id_search)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
