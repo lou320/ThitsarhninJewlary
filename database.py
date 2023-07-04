@@ -185,6 +185,35 @@ def search_items_by_sold_date(sold_date):
     except mysql.connector.Error as e:
         return 'An error occurred while searching for items.'
 
+def search_items_by_posted_date(sold_date):
+    select_query = """
+        SELECT * FROM items WHERE DATE(posted_date) = %s
+    """
+
+    try:
+        cursor.execute(select_query, (sold_date,))
+        rows = cursor.fetchall()
+        items = []
+        if len(rows) > 0:
+            for row in rows:
+                item = {
+                    'id': row[0],
+                    'image_url': row[1],
+                    'item_name': row[2],
+                    'bought_value': row[3],
+                    'item_gram': row[4],
+                    'bought_ayottwat': row[5],
+                    'sell_ayottwat': row[6],
+                    'is_sold': row[7],
+                    'posted_date': row[8],
+                    'sold_date': row[9]
+                }
+                items.append(item)
+            return items
+        else:
+            return 'No items found for the specified posted date.'
+    except mysql.connector.Error as e:
+        return 'An error occurred while searching for items.'
 
 
 def search_items_by_year_and_month(year, month):

@@ -18,7 +18,7 @@ import logging
 import os
 import datetime
 from BACKEND import get_file_name, get_dir
-from database import create_tables, add_item_to_database, fetch_items_from_database,search_by_name, remove_item_from_database,get_sold_items_from_database,mark_item_as_sold,get_items_sold_today_from_database, search_by_id, search_items_by_sold_date,search_items_by_year_and_month
+from database import create_tables, add_item_to_database, fetch_items_from_database,search_by_name, remove_item_from_database,get_sold_items_from_database,mark_item_as_sold,get_items_sold_today_from_database, search_by_id, search_items_by_sold_date,search_items_by_year_and_month,search_items_by_posted_date
 from telegram import __version__ as TG_VER
 
 try:
@@ -48,7 +48,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ADDING_ITEM_IMAGE,ADDING_ITEM_NAME, ADDING_BOUGHT_VALUE, ADDING_ITEM_GRAM, ADDING_BOUGHT_AYOTTWAT, ADDING_SELL_AYOTTWAT, SEARCH_BY_NAME,REMOVE_BY_ID, SOLD_ITEM, SEARCH_BY_ID, SPECIFIC_SOLD_DATE_SEARCH,SPECIFIC_SOLD_YEAR_MONTH_SEARCH  = range(12)
+ADDING_ITEM_IMAGE,ADDING_ITEM_NAME, ADDING_BOUGHT_VALUE, ADDING_ITEM_GRAM, ADDING_BOUGHT_AYOTTWAT, ADDING_SELL_AYOTTWAT, SEARCH_BY_NAME,REMOVE_BY_ID, SOLD_ITEM, SEARCH_BY_ID, SPECIFIC_SOLD_DATE_SEARCH,SPECIFIC_SOLD_YEAR_MONTH_SEARCH,SPECIFIC_POST_DATE_SEARCH  = range(13)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("Welcome, I'm a bot to help Thitsar Hnin Jewelry Shop.")
@@ -291,6 +291,39 @@ async def date_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(items)
     
     return ConversationHandler.END
+
+async def search_with__posted_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "ထည့်သွင်းထားသည့် date ထည့်ပါ"
+    )
+    return SPECIFIC_POST_DATE_SEARCH
+
+async def posted_date_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    search_query = update.message.text
+    
+    # Check if the date format is valid
+    try:
+        datetime.datetime.strptime(search_query, '%Y-%m-%d')
+    except ValueError:
+        await update.message.reply_text('ထည့်သွင်းထားသော format မမှန်ကန်ပါ။ \nထည့်သွင်းရမည့် ဉပမာ: 2023-07-3.')
+        return ConversationHandler.END
+
+    items = search_items_by_posted_date(search_query)
+    if not isinstance(items, str):
+        for item in items:
+            if item['is_sold']:
+                sold = ('ရောင်းပြီး\nSoldDate:'+ str(item['sold_date']))
+            else:
+                sold = 'မရောင်းရသေး'
+            image_path = item['image_url']
+            text = f"ID#{item['id']} {item['item_name']}\n\n{sold}\n\nPostDate:{item['posted_date']}\n\nပစ္စည်းအလေးချိန် - {item['item_gram']}\n\nဝယ်ရင်းစျေး- {item['bought_value']}\n\nဝယ်ရင်းပစ္စည်းအရော့တွက် - {item['bought_ayottwat']} \n\nရောင်းမည့်အရော့တွက် - {item['sell_ayottwat']} "
+            await update.message.reply_photo(photo=open(image_path, 'rb'), caption=text)
+    else:
+        await update.message.reply_text(items)
+    
+    return ConversationHandler.END
+
+
 async def search_with_year_month(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "ရောင်းချထားသည့် ခုနှစ်နှင့်လ ထည့်ပါ"
@@ -401,9 +434,16 @@ def main() -> None:
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     specific_sold_date_search = ConversationHandler(
-        entry_points=[CommandHandler('date_search', search_with_date)],
+        entry_points=[CommandHandler('sold_date_search', search_with_date)],
         states={
             SPECIFIC_SOLD_DATE_SEARCH: [MessageHandler(filters.TEXT & ~filters.COMMAND, date_search)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+    specific_post_date_search = ConversationHandler(
+        entry_points=[CommandHandler('post_date_search', search_with__posted_date)],
+        states={
+            SPECIFIC_POST_DATE_SEARCH: [MessageHandler(filters.TEXT & ~filters.COMMAND, posted_date_search)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
@@ -424,6 +464,7 @@ def main() -> None:
     application.add_handler(sold_item_conv_handler)
     application.add_handler(specific_sold_date_search)
     application.add_handler(specific_sold_year_month_search)
+    application.add_handler(specific_post_date_search)
     application.run_polling()
 
 
