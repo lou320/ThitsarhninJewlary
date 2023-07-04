@@ -122,7 +122,7 @@ def search_by_name(search_query):
         else:
             return 'ပစ္စည်းမရှိပါ'
     except mysql.connector.Error as e:
-        return 'ပစ္စည်းရှာဖွေခြင်းမှားရွန်းနေပါသည်'
+        return 'ပစ္စည်းမရှိပါ'
 
 
 def search_by_id(item_id):
@@ -152,7 +152,71 @@ def search_by_id(item_id):
         else:
             return 'ပစ္စည်းမရှိပါ'
     except mysql.connector.Error as e:
-        return 'ပစ္စည်းရှာဖွေခြင်းမှားရွန်းနေပါသည်'
+        return 'ပစ္စည်းမရှိပါ'
+
+
+def search_items_by_sold_date(sold_date):
+    select_query = """
+        SELECT * FROM items WHERE DATE(sold_date) = %s
+    """
+
+    try:
+        cursor.execute(select_query, (sold_date,))
+        rows = cursor.fetchall()
+        items = []
+        if len(rows) > 0:
+            for row in rows:
+                item = {
+                    'id': row[0],
+                    'image_url': row[1],
+                    'item_name': row[2],
+                    'bought_value': row[3],
+                    'item_gram': row[4],
+                    'bought_ayottwat': row[5],
+                    'sell_ayottwat': row[6],
+                    'is_sold': row[7],
+                    'posted_date': row[8],
+                    'sold_date': row[9]
+                }
+                items.append(item)
+            return items
+        else:
+            return 'No items found for the specified sold date.'
+    except mysql.connector.Error as e:
+        return 'An error occurred while searching for items.'
+
+
+
+def search_items_by_year_and_month(year, month):
+    select_query = """
+        SELECT * FROM items WHERE YEAR(sold_date) = %s AND MONTH(sold_date) = %s
+    """
+
+    try:
+        cursor.execute(select_query, (year, month))
+        rows = cursor.fetchall()
+        items = []
+        if len(rows) > 0:
+            for row in rows:
+                item = {
+                    'id': row[0],
+                    'image_url': row[1],
+                    'item_name': row[2],
+                    'bought_value': row[3],
+                    'item_gram': row[4],
+                    'bought_ayottwat': row[5],
+                    'sell_ayottwat': row[6],
+                    'is_sold': row[7],
+                    'posted_date': row[8],
+                    'sold_date': row[9]
+                }
+                items.append(item)
+            return items
+        else:
+            return 'No items found for the specified year and month.'
+    except mysql.connector.Error as e:
+        return 'An error occurred while searching for items.'
+
 
 
 def remove_item_from_database(item_id):
